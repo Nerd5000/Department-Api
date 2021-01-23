@@ -1,20 +1,39 @@
-from __main__ import app, db, Sheets, Student
-from flask import Flask, jsonify, request
+from models.dbfile import db
+from models.student import Student
+from flask import jsonify, request, Blueprint
+
+students = Blueprint('students', __name__)
 
 
-@app.route('/students',methods=['GET'])
-def students():
+@students.route('/', methods=['GET'])
+def getStudents():
     students = Student.query.all()
     if len(students) > 0:
         studentList = []
         for student in students:
-            studentList.append({'name': student.name, 'gender': student.gender,'id':student.id})
+            studentList.append(
+                {'name': student.name, 'gender': student.gender, 'id': student.id})
         return jsonify(studentList)
     else:
         return 'their\'s no Students'
+
 # ===================================================
 
-@app.route('/update_student/<int:id>',methods=['POST'])
+
+@students.route('/', methods=['POST'])
+def createStudent():
+    jsonData = request.json
+    try:
+        student = Student(jsonData['name'], jsonData['gender'])
+        db.session.add(student)
+        db.session.commit()
+        return 'created'
+    except:
+        return 'Error Has Occurd Check your json'
+
+
+# ===================================================
+@students.route('/update/<int:id>', methods=['POST'])
 def updateStudent(id):
     student = Student.query.get_or_404(id)
 
@@ -26,8 +45,10 @@ def updateStudent(id):
         return 'Updated'
     except:
         return 'There was an issue updating Student'
+
+
 # ===================================================
-@app.route('/delete_student/<int:id>')
+@students.route('/delete/<int:id>', methods=['GET'])
 def deleteStudent(id):
     studentToDelete = Student.query.get_or_404(id)
 
@@ -37,17 +58,3 @@ def deleteStudent(id):
         return 'Deleted'
     except:
         return 'There was a problem deleting that Student'
-
-
-# ===================================================
-
-@app.route('/student',methods=['POST'])
-def createStudent():
-    jsonData = request.json
-    try:
-        student = Student(jsonData['name'],jsonData['gender'])
-        db.session.add(student)
-        db.session.commit()
-        return 'created'
-    except:
-        return 'Error Has Occurd Check your json'
